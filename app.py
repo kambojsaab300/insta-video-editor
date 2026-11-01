@@ -67,6 +67,22 @@ st.markdown("""
         opacity: 0.95;
     }
 
+    /* Clear Button styling */
+    .clear-btn button {
+        height: 2rem !important;
+        font-size: 0.82rem !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        color: #bbb !important;
+        box-shadow: none !important;
+        border-radius: 8px !important;
+    }
+    .clear-btn button:hover {
+        background: rgba(244, 67, 54, 0.15) !important;
+        border-color: #f44336 !important;
+        color: #ff8a80 !important;
+    }
+
     /* Video Result Card */
     .result-card {
         background: rgba(255, 255, 255, 0.04);
@@ -100,7 +116,7 @@ def inject_beforeunload_warning():
         try {
             var p = window.parent || window.top || window;
             function warn(e) {
-                var msg = "⚠️ Video processing chal rahi hai! Refresh na karein.";
+                var msg = "⚠️ Video processing is in progress! Please do not reload.";
                 e.preventDefault(); e.returnValue = msg; return msg;
             }
             p.onbeforeunload = warn;
@@ -130,20 +146,40 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 1. Links Input
+# Initialize Session State for Links Input
+if "links_text" not in st.session_state:
+    st.session_state["links_text"] = ""
+
+# 1. Links Input with 1-Click Clear Button
 st.markdown('<div class="clean-card">', unsafe_allow_html=True)
+header_col1, header_col2 = st.columns([2.5, 1])
+with header_col1:
+    st.markdown("**🔗 Instagram Links**")
+with header_col2:
+    st.markdown('<div class="clear-btn">', unsafe_allow_html=True)
+    if st.button("🗑️ Clear Links", key="clear_btn"):
+        st.session_state["links_text"] = ""
+        st.session_state["links_area_val"] = ""
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
 links_raw = st.text_area(
-    "Instagram Links (Ek ya Multiple):",
+    "Instagram Links (Single or Multiple):",
+    value=st.session_state.get("links_text", ""),
     placeholder="https://www.instagram.com/reel/Cxxxxxx/\nhttps://www.instagram.com/reel/Cyyyyyy/",
     height=95,
-    help="1 ya 10+ links paste karein, har link nayi line me."
+    key="links_area_val",
+    label_visibility="collapsed",
+    help="Paste one or multiple Instagram links, one link per line."
 )
+st.session_state["links_text"] = links_raw
+
 links = [l.strip() for l in links_raw.splitlines() if l.strip() and "instagram.com" in l]
 if links:
-    st.caption(f"✨ **{len(links)} Valid Link(s) Ready**")
+    st.caption(f"✨ **{len(links)} Valid Link(s) Detected**")
 st.markdown('</div>', unsafe_allow_html=True)
 
-# 2. Image Selection (Purani Image ya Nayi Upload)
+# 2. Image Selection (Saved Banners or New Upload)
 st.markdown('<div class="clean-card">', unsafe_allow_html=True)
 st.markdown("**🖼️ Top Banner Image**")
 
@@ -151,24 +187,23 @@ saved_images = [os.path.basename(f) for f in sorted(glob.glob(os.path.join(SAVED
 
 img_source = st.radio(
     "Image Source:",
-    options=["Purani Saved Image", "Nayi Image Upload"],
+    options=["Saved Banners", "Upload New Image"],
     horizontal=True,
     label_visibility="collapsed"
 )
 
 selected_image_path = None
 
-if img_source == "Purani Saved Image":
+if img_source == "Saved Banners":
     if saved_images:
-        chosen_img_name = st.selectbox("Saved Images me se chunein:", saved_images)
+        chosen_img_name = st.selectbox("Choose a saved banner:", saved_images)
         selected_image_path = os.path.join(SAVED_DIR, chosen_img_name)
         st.image(selected_image_path, width=280)
     else:
-        st.info("Abhi koi purani image saved nahi hai. Nayi image upload karein.")
+        st.info("No saved banners found yet. Please upload a new image.")
 else:
-    new_img = st.file_uploader("Nayi Image Choose Karein:", type=["png", "jpg", "jpeg", "webp"])
+    new_img = st.file_uploader("Upload New Image:", type=["png", "jpg", "jpeg", "webp"])
     if new_img:
-        # Save to saved_banners for permanent re-use
         clean_name = f"{int(time.time())}_{new_img.name}"
         save_path = os.path.join(SAVED_DIR, clean_name)
         with open(save_path, "wb") as f:
@@ -181,11 +216,11 @@ st.markdown('</div>', unsafe_allow_html=True)
 with st.expander("⚙️ Advanced Layout Settings (Optional)", expanded=False):
     col_s1, col_s2 = st.columns(2)
     with col_s1:
-        mode = st.radio("Style:", ["overlay", "header"], format_func=lambda x: "🎯 Overlay On Video" if x == "overlay" else "🔝 Header (Above Video)")
-        fit_mode = st.radio("Sizing:", ["fit_width", "custom_ratio"], format_func=lambda x: "Zero-Gap Fit Width (Recommended)" if x == "fit_width" else "Custom Height Slider")
+        mode = st.radio("Style:", ["overlay", "header"], format_func=lambda x: "🎯 Overlay on Video" if x == "overlay" else "🔝 Header (Above Video)")
+        fit_mode = st.radio("Sizing:", ["fit_width", "custom_ratio"], format_func=lambda x: "Full Width (Zero Gap)" if x == "fit_width" else "Custom Height Slider")
     with col_s2:
         if fit_mode == "custom_ratio":
-            height_ratio = st.slider("Height %:", 10, 45, 22, 2, format="%d%%") / 100.0
+            height_ratio = st.slider("Banner Height %:", 10, 45, 22, 2, format="%d%%") / 100.0
         else:
             height_ratio = 0.20
         bg_color = st.selectbox("Header Color:", ["black", "white", "#1e1e1e"]) if mode == "header" else "black"
@@ -201,16 +236,16 @@ start_btn = st.button("🚀 Process & Generate Videos", type="primary")
 # Execution Logic
 if start_btn:
     if not links:
-        st.error("⚠️ Please kam se kam 1 Instagram link paste karein!")
+        st.error("⚠️ Please enter at least 1 valid Instagram link!")
     elif not selected_image_path or not os.path.exists(selected_image_path):
-        st.error("⚠️ Please banner image select ya upload karein!")
+        st.error("⚠️ Please select or upload a banner image!")
     else:
         total = len(links)
         st.session_state.results = []
         
         inject_beforeunload_warning()
         alert_placeholder = st.empty()
-        alert_placeholder.warning("⚠️ Processing chal rahi hai. Please page ko refresh na karein!")
+        alert_placeholder.warning("⚠️ Processing in progress. Please do not reload or leave this page!")
 
         st.markdown("---")
         progress_bar = st.progress(0)
@@ -238,7 +273,7 @@ if start_btn:
                     # 1. Download
                     dl_res = download_instagram_video(link, output_dir=temp_dl_dir)
                     if not dl_res.get("success"):
-                        item["error"] = "Download failed (Post private ho sakti hai)"
+                        item["error"] = "Download failed (Post might be private)"
                     else:
                         vid_path = dl_res["filepath"]
                         item["title"] = dl_res.get("title", f"Video #{idx}")
