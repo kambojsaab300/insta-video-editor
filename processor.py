@@ -139,3 +139,145 @@ def add_top_image_to_video(
         "width": target_width,
         "height": vh if mode == "overlay" else (vh + target_height)
     }
+
+def create_text_banner(
+    text: str,
+    output_path: str,
+    width: int = 1080,
+    height: int = 220,
+    bg_color: str = "black",
+    text_color: str = "white",
+    font_size: int = 50
+) -> str:
+    from PIL import Image, ImageDraw, ImageFont
+    import textwrap
+
+    img = Image.new("RGBA", (width, height), color=bg_color)
+    draw = ImageDraw.Draw(img)
+    
+    font = None
+    font_candidates = [
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "Arial.ttf"
+    ]
+    for fc in font_candidates:
+        if os.path.exists(fc):
+            try:
+                font = ImageFont.truetype(fc, font_size)
+                break
+            except Exception:
+                pass
+
+    if not font:
+        try:
+            font = ImageFont.load_default(size=font_size)
+        except Exception:
+            font = ImageFont.load_default()
+
+    lines = textwrap.wrap(text, width=32)
+    line_height = int(font_size * 1.3)
+    total_text_height = len(lines) * line_height
+    start_y = max(10, (height - total_text_height) // 2)
+
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font)
+        line_w = bbox[2] - bbox[0]
+        x = max(10, (width - line_w) // 2)
+        y = start_y + (i * line_height)
+        draw.text((x, y), line, fill=text_color, font=font)
+
+    img.save(output_path, "PNG")
+    return output_path
+
+def process_youtube_to_4_5(
+    video_path: str,
+    output_path: str,
+    text: str = "",
+    text_bg: str = "black",
+    text_color: str = "white",
+    banner_height: int = 220
+) -> Dict[str, Any]:
+    """
+    Crops any YouTube video to 4:5 aspect ratio (1080x1350) and overlays optional top text banner.
+    """
+    ffmpeg_exe = get_ffmpeg_path()
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    
+    # 4:5 center-crop filter, standard 1080x1350
+    crop_base = r"crop=w=min(iw\,ih*4/5):h=min(ih\,iw*5/4):x=(in_w-out_w)/2:y=(in_h-out_h)/2,scale=1080:1350"
+
+    if text and text.strip():
+        banner_temp = output_path + "_banner.png"
+        create_text_banner(
+            text=text.strip(),
+            output_path=banner_temp,
+            width=1080,
+            height=banner_height,
+            bg_color=text_bg,
+            text_color=text_color
+        )
+        
+        filter_complex = (
+            f"[0:v]{crop_base}[vid];"
+            f"[1:v]scale=1080:{banner_height}[banner];"
+            f"[vid][banner]overlay=0:0:shortest=1[outv]"
+        )
+        cmd = [
+            ffmpeg_exe,
+            "-y",
+            "-i", video_path,
+            "-loop", "1",
+            "-i", banner_temp,
+            "-filter_complex", filter_complex,
+            "-map", "[outv]",
+            "-map", "0:a?",
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-crf", "22",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            output_path
+        ]
+    else:
+        banner_temp = None
+        cmd = [
+            ffmpeg_exe,
+            "-y",
+            "-i", video_path,
+            "-vf", crop_base,
+            "-map", "0:v",
+            "-map", "0:a?",
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-crf", "22",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            output_path
+        ]
+
+    process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    
+    if banner_temp and os.path.exists(banner_temp):
+        try: os.remove(banner_temp)
+        except Exception: pass
+
+    if process.returncode != 0:
+        return {
+            "success": False,
+            "error": process.stderr,
+            "command": " ".join(cmd)
+        }
+
+    return {
+        "success": True,
+        "output_path": output_path,
+        "width": 1080,
+        "height": 1350
+    }
+
