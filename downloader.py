@@ -66,6 +66,7 @@ def download_instagram_video(url: str, output_dir: str = "downloads") -> Dict[st
 def download_youtube_video(url: str, output_dir: str = "downloads", quality: str = "1080p") -> Dict[str, Any]:
     """
     Downloads a YouTube video or Short using yt-dlp with specific quality/resolution.
+    Uses multi-client fallback ('android', 'ios') to prevent HTTP 403 Forbidden errors on cloud servers.
     Returns dict with filepath, title, id, width, height, etc.
     """
     os.makedirs(output_dir, exist_ok=True)
@@ -84,42 +85,65 @@ def download_youtube_video(url: str, output_dir: str = "downloads", quality: str
     else:
         fmt = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
     
-    ydl_opts = {
-        'format': fmt,
-        'outtmpl': outtmpl,
-        'merge_output_format': 'mp4',
-        'ffmpeg_location': ffmpeg_exe,
-        'quiet': False,
-        'no_warnings': False,
-    }
+    # Try mobile player client first (bypasses 403 Forbidden on datacenter/cloud IPs), then fallback
+    client_strategies = [
+        ['android', 'ios'],
+        ['web_embedded', 'mweb'],
+        ['tv'],
+        ['default']
+    ]
     
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            if 'entries' in info:
-                info = info['entries'][0]
-                
-            video_id = info.get('id', 'yt_video')
-            ext = info.get('ext', 'mp4')
-            filepath = os.path.join(output_dir, f"yt_{video_id}.{ext}")
-            
-            if not os.path.exists(filepath):
-                for f in os.listdir(output_dir):
-                    if f.startswith(f"yt_{video_id}"):
-                        filepath = os.path.join(output_dir, f)
-                        break
-
-            return {
-                'success': True,
-                'filepath': filepath,
-                'id': video_id,
-                'title': info.get('title', 'YouTube Video'),
-                'duration': info.get('duration', 0),
-                'width': info.get('width'),
-                'height': info.get('height')
-            }
-    except Exception as e:
-        return {
-            'success': False,
-            'error': str(e)
+    last_error = ""
+    for clients in client_strategies:
+        ydl_opts = {
+            'format': fmt,
+            'outtmpl': outtmpl,
+            'merge_output_format': 'mp4',
+            'ffmpeg_location': ffmpeg_exe,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': clients
+                }
+            },
+            'http_headers': {
+                'User-Agent': 'com.google.android.youtube/19.16.39 (Linux; U; Android 14; en_US) gzip',
+                'Accept-Language': 'en-US,en;q=0.9',
+            },
+            'quiet': False,
+            'no_warnings': True,
         }
+        
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                if 'entries' in info:
+                    info = info['entries'][0]
+                    
+                video_id = info.get('id', 'yt_video')
+                ext = info.get('ext', 'mp4')
+                filepath = os.path.join(output_dir, f"yt_{video_id}.{ext}")
+                
+                if not os.path.exists(filepath):
+                    for f in os.listdir(output_dir):
+                        if f.startswith(f"yt_{video_id}"):
+                            filepath = os.path.join(output_dir, f)
+                            break
+
+                if os.path.exists(filepath):
+                    return {
+                        'success': True,
+                        'filepath': filepath,
+                        'id': video_id,
+                        'title': info.get('title', 'YouTube Video'),
+                        'duration': info.get('duration', 0),
+                        'width': info.get('width'),
+                        'height': info.get('height')
+                    }
+        except Exception as e:
+            last_error = str(e)
+            continue
+            
+    return {
+        'success': False,
+        'error': f"Failed to download ({last_error})"
+    }

@@ -1,4 +1,4 @@
-yt-dlp
+yt-dlp[default]
 imageio-ffmpeg
 pillow
 streamlit
