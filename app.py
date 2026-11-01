@@ -9,7 +9,6 @@ import glob
 from PIL import Image
 from downloader import download_instagram_video
 from processor import add_top_image_to_video, get_video_info
-from browser_uploader import upload_to_main_facebook_account
 
 st.set_page_config(
     page_title="InstaForge Studio",
@@ -295,12 +294,11 @@ if start_btn:
                                 key=f"dl_live_{idx}"
                             )
                         with col_b2:
-                            with st.popover("🚀 Post to FB Reels"):
-                                caption = st.text_area("Caption:", value=item["title"], key=f"cap_live_{idx}")
-                                if st.button("🚀 Open in Reels Creator", key=f"fb_live_{idx}", type="primary"):
-                                    fb_res = upload_to_main_facebook_account(video_bytes_or_path=item["bytes"], caption=caption)
-                                    st.success(fb_res.get("message"))
-                                st.markdown("[🔗 Direct Link: facebook.com/reels/create/](https://www.facebook.com/reels/create/)")
+                            st.link_button(
+                                label="🚀 Post to FB Reels",
+                                url="https://www.facebook.com/reels/create/",
+                                type="primary"
+                            )
                         st.markdown('</div>', unsafe_allow_html=True)
 
             status_text.success("🎉 All videos generated successfully!")
@@ -346,12 +344,11 @@ elif st.session_state.results:
                     key=f"dl_pers_{item['index']}"
                 )
             with c2:
-                with st.popover("🚀 Post to FB Reels"):
-                    cap = st.text_area("Caption:", value=item["title"], key=f"cap_pers_{item['index']}")
-                    if st.button("🚀 Open in Reels Creator", key=f"fb_pers_{item['index']}", type="primary"):
-                        fb_res = upload_to_main_facebook_account(video_bytes_or_path=item["bytes"], caption=cap)
-                        st.success(fb_res.get("message"))
-                    st.markdown("[🔗 Direct Link: facebook.com/reels/create/](https://www.facebook.com/reels/create/)")
+                st.link_button(
+                    label="🚀 Post to FB Reels",
+                    url="https://www.facebook.com/reels/create/",
+                    type="primary"
+                )
         else:
             st.error(f"❌ #{item['index']} Failed: {item['error']}")
         st.markdown('</div>', unsafe_allow_html=True)
