@@ -195,34 +195,43 @@ def create_text_banner(
 def process_youtube_to_4_5(
     video_path: str,
     output_path: str,
+    target_width: int = 1080,
+    target_height: int = 1350,
     text: str = "",
     text_bg: str = "black",
     text_color: str = "white",
     banner_height: int = 220
 ) -> Dict[str, Any]:
     """
-    Crops any YouTube video to 4:5 aspect ratio (1080x1350) and overlays optional top text banner.
+    Crops any YouTube video to 4:5 aspect ratio with chosen resolution (e.g. 1080x1350, 720x900)
+    and overlays optional top text banner.
     """
     ffmpeg_exe = get_ffmpeg_path()
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     
-    # 4:5 center-crop filter, standard 1080x1350
-    crop_base = r"crop=w=min(iw\,ih*4/5):h=min(ih\,iw*5/4):x=(in_w-out_w)/2:y=(in_h-out_h)/2,scale=1080:1350"
+    # Scale factor relative to 1080 width
+    scale_factor = target_width / 1080.0
+    effective_banner_height = max(60, int(banner_height * scale_factor))
+    effective_font_size = max(18, int(50 * scale_factor))
+    
+    # 4:5 center-crop filter, scaled to target_width:target_height
+    crop_base = rf"crop=w=min(iw\,ih*4/5):h=min(ih\,iw*5/4):x=(in_w-out_w)/2:y=(in_h-out_h)/2,scale={target_width}:{target_height}"
 
     if text and text.strip():
         banner_temp = output_path + "_banner.png"
         create_text_banner(
             text=text.strip(),
             output_path=banner_temp,
-            width=1080,
-            height=banner_height,
+            width=target_width,
+            height=effective_banner_height,
             bg_color=text_bg,
-            text_color=text_color
+            text_color=text_color,
+            font_size=effective_font_size
         )
         
         filter_complex = (
             f"[0:v]{crop_base}[vid];"
-            f"[1:v]scale=1080:{banner_height}[banner];"
+            f"[1:v]scale={target_width}:{effective_banner_height}[banner];"
             f"[vid][banner]overlay=0:0:shortest=1[outv]"
         )
         cmd = [
@@ -277,7 +286,7 @@ def process_youtube_to_4_5(
     return {
         "success": True,
         "output_path": output_path,
-        "width": 1080,
-        "height": 1350
+        "width": target_width,
+        "height": target_height
     }
 

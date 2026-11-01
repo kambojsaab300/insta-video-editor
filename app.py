@@ -405,7 +405,7 @@ with tab_insta:
             st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================================
-# TAB 2: YOUTUBE STUDIO (4:5 Aspect Ratio Crop + Custom Top Text)
+# TAB 2: YOUTUBE STUDIO (Quality / Size Selection, 4:5 Crop & Direct Download)
 # =========================================================================
 with tab_yt:
     if "yt_links_text" not in st.session_state:
@@ -440,31 +440,146 @@ with tab_yt:
         st.caption(f"✨ **{len(yt_links)} Valid YouTube Link(s) Detected**")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 2. Top Text Banner Input
+    # 2. Quality / Video Size & Mode Selector (Before Generating)
     st.markdown('<div class="clean-card">', unsafe_allow_html=True)
-    st.markdown("**✍️ Top Headline / Text Banner (Optional)**")
-    yt_custom_text = st.text_input(
-        "Top Text to Overlay:",
-        placeholder="e.g. WAIT FOR THE END! 😂 | INSANE MOMENT 🔥",
-        help="This text will be rendered as a bold top header on the 4:5 cropped video."
-    )
+    st.markdown("**⚙️ Video Size & Quality Settings**")
+    q_col1, q_col2 = st.columns(2)
+    with q_col1:
+        yt_quality_choice = st.selectbox(
+            "Select Video Resolution / Size:",
+            options=[
+                "1080p (Full HD - High Quality, 1080x1350)",
+                "720p (HD - Balanced, 720x900)",
+                "480p (SD - Fast / Smaller Size, 480x600)",
+                "360p (Low - Lightweight, 360x450)",
+                "Best Available (Original Source Quality)"
+            ],
+            index=0,
+            help="Choose the video resolution before download and processing."
+        )
+    with q_col2:
+        yt_mode = st.radio(
+            "Processing Mode:",
+            options=[
+                "📐 Crop to 4:5 (With Top Text Banner)",
+                "📥 Direct Download (Original Video, No Crop)"
+            ],
+            index=0,
+            help="Choose between 4:5 aspect ratio cropping or direct original video download."
+        )
 
-    with st.expander("🎨 Text Banner Styling (Colors & Height)", expanded=False):
-        yt_scol1, yt_scol2 = st.columns(2)
-        with yt_scol1:
-            yt_text_color = st.selectbox("Text Color:", ["yellow", "white", "#00ffff", "#ff3b30"], index=0)
-            yt_bg_color = st.selectbox("Banner Background:", ["black", "#121212", "white", "#b71c1c"], index=0)
-        with yt_scol2:
-            yt_banner_height = st.slider("Banner Height (px):", 140, 320, 220, 20)
-            st.caption("Auto 4:5 (1080x1350) Crop is always applied.")
+    # Parse Quality
+    if "1080p" in yt_quality_choice:
+        yt_quality = "1080p"
+        target_w, target_h = 1080, 1350
+    elif "720p" in yt_quality_choice:
+        yt_quality = "720p"
+        target_w, target_h = 720, 900
+    elif "480p" in yt_quality_choice:
+        yt_quality = "480p"
+        target_w, target_h = 480, 600
+    elif "360p" in yt_quality_choice:
+        yt_quality = "360p"
+        target_w, target_h = 360, 450
+    else:
+        yt_quality = "best"
+        target_w, target_h = 1080, 1350
+
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # 3. Top Text Banner Input (Only if 4:5 Crop mode is selected)
+    yt_custom_text = ""
+    yt_text_color = "yellow"
+    yt_bg_color = "black"
+    yt_banner_height = 220
+
+    if yt_mode == "📐 Crop to 4:5 (With Top Text Banner)":
+        st.markdown('<div class="clean-card">', unsafe_allow_html=True)
+        st.markdown("**✍️ Top Headline / Text Banner (Optional)**")
+        yt_custom_text = st.text_input(
+            "Top Text to Overlay:",
+            placeholder="e.g. WAIT FOR THE END! 😂 | INSANE MOMENT 🔥",
+            help="This text will be rendered as a bold top header on the 4:5 cropped video."
+        )
+
+        with st.expander("🎨 Text Banner Styling (Colors & Height)", expanded=False):
+            yt_scol1, yt_scol2 = st.columns(2)
+            with yt_scol1:
+                yt_text_color = st.selectbox("Text Color:", ["yellow", "white", "#00ffff", "#ff3b30"], index=0)
+                yt_bg_color = st.selectbox("Banner Background:", ["black", "#121212", "white", "#b71c1c"], index=0)
+            with yt_scol2:
+                yt_banner_height = st.slider("Banner Height (px):", 140, 320, 220, 20)
+                st.caption(f"Output size: {target_w}x{target_h} (4:5 Aspect Ratio)")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # Session state for YouTube results
     if "yt_results" not in st.session_state:
         st.session_state.yt_results = []
 
+    # Helper function to render a card
+    def render_youtube_card(item, key_prefix="live"):
+        st.markdown('<div class="result-card">', unsafe_allow_html=True)
+        idx = item["index"]
+        if item["success"]:
+            st.markdown(f"**✅ Video #{idx} Ready ({item['quality']}):** {item['title'][:45]}")
+            play_bytes = item.get("cropped_bytes") or item.get("orig_bytes")
+            if play_bytes:
+                st.video(play_bytes)
+
+            if item.get("cropped_bytes") and item.get("orig_bytes"):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.download_button(
+                        label=f"⬇️ 4:5 Video ({item['quality']})",
+                        data=item["cropped_bytes"],
+                        file_name=f"yt_4_5_{idx}_{item['quality']}.mp4",
+                        mime="video/mp4",
+                        key=f"dl_crop_{key_prefix}_{idx}"
+                    )
+                with col2:
+                    st.download_button(
+                        label=f"📥 Original Video ({item['quality']})",
+                        data=item["orig_bytes"],
+                        file_name=f"yt_original_{idx}_{item['quality']}.mp4",
+                        mime="video/mp4",
+                        key=f"dl_orig_{key_prefix}_{idx}"
+                    )
+                with col3:
+                    st.link_button(
+                        label="🚀 Post to FB Reels",
+                        url="https://www.facebook.com/reels/create/",
+                        type="primary",
+                        key=f"fb_yt_{key_prefix}_{idx}"
+                    )
+            else:
+                dl_data = item.get("cropped_bytes") or item.get("orig_bytes")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.download_button(
+                        label=f"⬇️ Download Video ({item['quality']})",
+                        data=dl_data,
+                        file_name=f"yt_video_{idx}_{item['quality']}.mp4",
+                        mime="video/mp4",
+                        key=f"dl_single_{key_prefix}_{idx}"
+                    )
+                with col2:
+                    st.link_button(
+                        label="🚀 Post to FB Reels",
+                        url="https://www.facebook.com/reels/create/",
+                        type="primary",
+                        key=f"fb_yt_{key_prefix}_{idx}"
+                    )
+        else:
+            st.error(f"❌ #{idx} Failed: {item['error']}")
+        st.markdown('</div>', unsafe_allow_html=True)
+
     # Action Button
-    yt_start_btn = st.button("🚀 Crop to 4:5 & Generate YouTube Videos", type="primary", key="yt_start_btn")
+    if "Direct Download" in yt_mode:
+        btn_label = f"⬇️ Download YouTube Video(s) [{yt_quality}]"
+    else:
+        btn_label = f"🚀 Crop to 4:5 ({target_w}x{target_h}) & Generate [{yt_quality}]"
+
+    yt_start_btn = st.button(btn_label, type="primary", key="yt_start_btn")
 
     if yt_start_btn:
         if not yt_links:
@@ -485,13 +600,17 @@ with tab_yt:
 
             try:
                 for idx, ylink in enumerate(yt_links, start=1):
-                    yt_status.markdown(f"**[{idx}/{yt_total}]** Downloading & Cropping to 4:5: `{ylink[:40]}...`")
+                    mode_desc = "Downloading Original" if "Direct Download" in yt_mode else f"Cropping to 4:5 ({target_w}x{target_h})"
+                    yt_status.markdown(f"**[{idx}/{yt_total}]** {mode_desc}: `{ylink[:40]}...`")
                     item = {
                         "index": idx,
                         "url": ylink,
                         "title": f"YouTube #{idx}",
                         "success": False,
-                        "bytes": None,
+                        "cropped_bytes": None,
+                        "orig_bytes": None,
+                        "mode": yt_mode,
+                        "quality": yt_quality,
                         "error": ""
                     }
 
@@ -499,30 +618,39 @@ with tab_yt:
                     temp_out = os.path.join(TEMP_DIR, f"yt_out_{int(time.time())}_{idx}.mp4")
 
                     try:
-                        # 1. Download YouTube video
-                        dl_res = download_youtube_video(ylink, output_dir=temp_dl_dir)
+                        # 1. Download YouTube video with requested quality
+                        dl_res = download_youtube_video(ylink, output_dir=temp_dl_dir, quality=yt_quality)
                         if not dl_res.get("success"):
-                            item["error"] = "YouTube download failed (Video might be private or region-locked)"
+                            item["error"] = dl_res.get("error", "YouTube download failed (Video might be private or restricted)")
                         else:
                             vid_path = dl_res["filepath"]
                             item["title"] = dl_res.get("title", f"YouTube #{idx}")
 
-                            # 2. Crop to 4:5 and overlay text banner
-                            proc_res = process_youtube_to_4_5(
-                                video_path=vid_path,
-                                output_path=temp_out,
-                                text=yt_custom_text,
-                                text_bg=yt_bg_color,
-                                text_color=yt_text_color,
-                                banner_height=yt_banner_height
-                            )
+                            # Read original downloaded bytes
+                            with open(vid_path, "rb") as ovf:
+                                item["orig_bytes"] = ovf.read()
 
-                            if proc_res.get("success") and os.path.exists(temp_out):
-                                with open(temp_out, "rb") as vf:
-                                    item["bytes"] = vf.read()
+                            if "Direct Download" in yt_mode:
                                 item["success"] = True
                             else:
-                                item["error"] = proc_res.get("error", "Cropping/encoding error")
+                                # 2. Crop to 4:5 and overlay text banner
+                                proc_res = process_youtube_to_4_5(
+                                    video_path=vid_path,
+                                    output_path=temp_out,
+                                    target_width=target_w,
+                                    target_height=target_h,
+                                    text=yt_custom_text,
+                                    text_bg=yt_bg_color,
+                                    text_color=yt_text_color,
+                                    banner_height=yt_banner_height
+                                )
+
+                                if proc_res.get("success") and os.path.exists(temp_out):
+                                    with open(temp_out, "rb") as vf:
+                                        item["cropped_bytes"] = vf.read()
+                                    item["success"] = True
+                                else:
+                                    item["error"] = proc_res.get("error", "Cropping/encoding error")
 
                     except Exception as e:
                         item["error"] = str(e)
@@ -538,30 +666,9 @@ with tab_yt:
                     yt_progress.progress(int((idx / yt_total) * 100))
 
                     with yt_live_container:
-                        if item["success"]:
-                            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-                            st.markdown(f"**✅ 4:5 Video #{idx} Ready:** {item['title'][:40]}")
-                            st.video(item["bytes"])
+                        render_youtube_card(item, key_prefix="live")
 
-                            c1, c2 = st.columns(2)
-                            with c1:
-                                st.download_button(
-                                    label=f"⬇️ Download #{idx} (4:5)",
-                                    data=item["bytes"],
-                                    file_name=f"youtube_4_5_video_{idx}.mp4",
-                                    mime="video/mp4",
-                                    key=f"yt_dl_live_{idx}"
-                                )
-                            with c2:
-                                st.link_button(
-                                    label="🚀 Post to FB Reels",
-                                    url="https://www.facebook.com/reels/create/",
-                                    type="primary",
-                                    key=f"yt_fb_link_live_{idx}"
-                                )
-                            st.markdown('</div>', unsafe_allow_html=True)
-
-                yt_status.success("🎉 All YouTube videos cropped to 4:5 and generated successfully!")
+                yt_status.success("🎉 Processing completed successfully!")
                 yt_progress.empty()
             finally:
                 remove_beforeunload_warning()
@@ -570,46 +677,25 @@ with tab_yt:
     # Render Persisted YouTube Results
     elif st.session_state.yt_results:
         st.markdown("---")
-        st.subheader("🎬 Generated 4:5 Videos")
+        st.subheader("🎬 Generated Videos")
 
         successful_yt = [r for r in st.session_state.yt_results if r["success"]]
         if len(successful_yt) > 1:
             zip_buf = io.BytesIO()
             with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
                 for item in successful_yt:
-                    zf.writestr(f"youtube_4_5_video_{item['index']}.mp4", item["bytes"])
+                    data = item.get("cropped_bytes") or item.get("orig_bytes")
+                    if data:
+                        zf.writestr(f"youtube_video_{item['index']}_{item['quality']}.mp4", data)
             zip_buf.seek(0)
             st.download_button(
                 label=f"📦 Download All as ZIP ({len(successful_yt)} Videos)",
                 data=zip_buf.getvalue(),
-                file_name=f"youtube_4_5_batch_{int(time.time())}.zip",
+                file_name=f"youtube_batch_{int(time.time())}.zip",
                 mime="application/zip",
                 type="primary",
                 key="yt_zip_btn"
             )
 
         for item in st.session_state.yt_results:
-            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-            if item["success"]:
-                st.markdown(f"**✅ 4:5 Video #{item['index']} Ready:** {item['title'][:40]}")
-                st.video(item["bytes"])
-
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.download_button(
-                        label=f"⬇️ Download #{item['index']} (4:5)",
-                        data=item["bytes"],
-                        file_name=f"youtube_4_5_video_{item['index']}.mp4",
-                        mime="video/mp4",
-                        key=f"yt_dl_pers_{item['index']}"
-                    )
-                with c2:
-                    st.link_button(
-                        label="🚀 Post to FB Reels",
-                        url="https://www.facebook.com/reels/create/",
-                        type="primary",
-                        key=f"yt_fb_link_pers_{item['index']}"
-                    )
-            else:
-                st.error(f"❌ #{item['index']} Failed: {item['error']}")
-            st.markdown('</div>', unsafe_allow_html=True)
+            render_youtube_card(item, key_prefix="persisted")

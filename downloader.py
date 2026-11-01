@@ -63,16 +63,29 @@ def download_instagram_video(url: str, output_dir: str = "downloads") -> Dict[st
             'height': info.get('height')
         }
 
-def download_youtube_video(url: str, output_dir: str = "downloads") -> Dict[str, Any]:
+def download_youtube_video(url: str, output_dir: str = "downloads", quality: str = "1080p") -> Dict[str, Any]:
     """
-    Downloads a YouTube video or Short using yt-dlp.
-    Returns dict with filepath, title, id, etc.
+    Downloads a YouTube video or Short using yt-dlp with specific quality/resolution.
+    Returns dict with filepath, title, id, width, height, etc.
     """
     os.makedirs(output_dir, exist_ok=True)
     outtmpl = os.path.join(output_dir, "yt_%(id)s.%(ext)s")
     
+    height_map = {
+        "1080p": 1080,
+        "720p": 720,
+        "480p": 480,
+        "360p": 360
+    }
+    
+    if quality in height_map:
+        h = height_map[quality]
+        fmt = f"bestvideo[height<={h}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<={h}]+bestaudio/best[height<={h}]/best"
+    else:
+        fmt = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+    
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': fmt,
         'outtmpl': outtmpl,
         'merge_output_format': 'mp4',
         'ffmpeg_location': ffmpeg_exe,
@@ -80,27 +93,33 @@ def download_youtube_video(url: str, output_dir: str = "downloads") -> Dict[str,
         'no_warnings': False,
     }
     
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        if 'entries' in info:
-            info = info['entries'][0]
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            if 'entries' in info:
+                info = info['entries'][0]
+                
+            video_id = info.get('id', 'yt_video')
+            ext = info.get('ext', 'mp4')
+            filepath = os.path.join(output_dir, f"yt_{video_id}.{ext}")
             
-        video_id = info.get('id', 'yt_video')
-        ext = info.get('ext', 'mp4')
-        filepath = os.path.join(output_dir, f"yt_{video_id}.{ext}")
-        
-        if not os.path.exists(filepath):
-            for f in os.listdir(output_dir):
-                if f.startswith(f"yt_{video_id}"):
-                    filepath = os.path.join(output_dir, f)
-                    break
+            if not os.path.exists(filepath):
+                for f in os.listdir(output_dir):
+                    if f.startswith(f"yt_{video_id}"):
+                        filepath = os.path.join(output_dir, f)
+                        break
 
+            return {
+                'success': True,
+                'filepath': filepath,
+                'id': video_id,
+                'title': info.get('title', 'YouTube Video'),
+                'duration': info.get('duration', 0),
+                'width': info.get('width'),
+                'height': info.get('height')
+            }
+    except Exception as e:
         return {
-            'success': True,
-            'filepath': filepath,
-            'id': video_id,
-            'title': info.get('title', 'YouTube Video'),
-            'duration': info.get('duration', 0),
-            'width': info.get('width'),
-            'height': info.get('height')
+            'success': False,
+            'error': str(e)
         }
