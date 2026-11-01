@@ -1,0 +1,18 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Local Temp Directories
+temp_work/
+downloads/
+outputs/
+fb_browser_profile/
+test_temp/
+*.mp4
+.DS_Store
+uploads/
+
+# Config & Credentials
+fb_config.json
+.streamlit/credentials.toml
