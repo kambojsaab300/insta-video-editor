@@ -17,97 +17,196 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Responsive & Clean CSS
+# Global Styling: dark glass UI with Instagram-gradient accents
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    * { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
-
-    /* Compact Hero Header */
-    .hero-box {
-        text-align: center;
-        padding: 1.2rem 0.5rem 0.6rem 0.5rem;
-        margin-bottom: 0.8rem;
+    html, body, [class*="css"], .stMarkdown, button, input, textarea, select {
+        font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
     }
+
+    :root {
+        --grad: linear-gradient(120deg, #feda75 0%, #fa7e1e 22%, #d62976 50%, #962fbf 75%, #4f5bd5 100%);
+        --glass: rgba(255, 255, 255, 0.035);
+        --glass-border: rgba(255, 255, 255, 0.09);
+        --muted: #9a9ab0;
+    }
+
+    /* Background with soft colour glows */
+    .stApp {
+        background:
+            radial-gradient(900px 500px at 10% -10%, rgba(214, 41, 118, 0.22), transparent 60%),
+            radial-gradient(800px 500px at 100% 0%, rgba(79, 91, 213, 0.20), transparent 60%),
+            radial-gradient(700px 600px at 50% 110%, rgba(250, 126, 30, 0.10), transparent 60%),
+            #0b0b14;
+        background-attachment: fixed;
+    }
+    header[data-testid="stHeader"] { background: transparent; }
+    #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] { visibility: hidden; }
+    .block-container { padding-top: 2.2rem; padding-bottom: 4rem; max-width: 780px; }
+
+    /* Hero */
+    .hero-box { text-align: center; padding: 0.6rem 0.5rem 1.4rem; }
+    .hero-logo {
+        width: 64px; height: 64px; margin: 0 auto 0.9rem;
+        border-radius: 20px; background: var(--grad);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; box-shadow: 0 10px 40px rgba(214, 41, 118, 0.45);
+        animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
     .hero-title {
-        font-size: 2.1rem;
-        font-weight: 800;
-        background: linear-gradient(45deg, #f09433, #dc2743, #bc1888);
-        -webkit-background-clip: text;
+        font-size: 2.6rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+        background: var(--grad); background-size: 200% auto;
+        -webkit-background-clip: text; background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.2rem;
+        animation: shine 6s linear infinite;
     }
-    .hero-sub {
-        color: #888;
-        font-size: 0.95rem;
+    @keyframes shine { to { background-position: 200% center; } }
+    .hero-sub { color: var(--muted); font-size: 1rem; margin-top: 0.5rem; }
+
+    /* Section headings inside cards */
+    .sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 0.15rem; }
+    .sec-num {
+        width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+        background: var(--grad); color: #fff; font-weight: 800; font-size: 0.8rem;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .sec-title { font-weight: 700; font-size: 1.02rem; color: #f2f2f8; }
+    .sec-desc { color: var(--muted); font-size: 0.82rem; margin: 0 0 0.4rem 36px; }
+
+    /* Glass cards (st.container(border=True, key="card_*")) */
+    [class*="st-key-card"] {
+        background: var(--glass) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 18px !important;
+        padding: 1.2rem 1.25rem !important;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    [class*="st-key-card"]:hover {
+        border-color: rgba(214, 41, 118, 0.35) !important;
+        box-shadow: 0 10px 40px rgba(214, 41, 118, 0.12);
+    }
+    [class*="st-key-result"] {
+        background: rgba(255, 255, 255, 0.045) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 18px !important;
+        padding: 1rem !important;
     }
 
-    /* Clean Card Container */
-    .clean-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-    }
-
-    /* Mobile Responsive Buttons & Layout */
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3rem;
-        font-size: 1.05rem;
-        font-weight: 700;
-        background: linear-gradient(45deg, #f09433, #dc2743, #bc1888) !important;
-        border: none !important;
-        color: white !important;
-        box-shadow: 0 4px 12px rgba(220, 39, 67, 0.3);
-    }
-    .stButton>button:hover {
-        opacity: 0.95;
-    }
-
-    /* Clear Button styling */
-    .clear-btn button {
-        height: 2rem !important;
-        font-size: 0.82rem !important;
-        background: rgba(255, 255, 255, 0.06) !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        color: #bbb !important;
-        box-shadow: none !important;
-        border-radius: 8px !important;
-    }
-    .clear-btn button:hover {
-        background: rgba(244, 67, 54, 0.15) !important;
-        border-color: #f44336 !important;
-        color: #ff8a80 !important;
-    }
-
-    /* Video Result Card */
-    .result-card {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 14px;
-        padding: 1rem;
+    /* Tabs as a segmented pill control */
+    .stTabs [role="tablist"] {
+        gap: 6px; padding: 6px; border-radius: 16px;
+        background: var(--glass); border: 1px solid var(--glass-border);
         margin-bottom: 1.2rem;
     }
-
-    /* Tabs Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+    .stTabs [role="tab"] {
+        flex: 1; justify-content: center; height: 46px;
+        border-radius: 12px; padding: 8px 14px;
+        font-weight: 700; color: var(--muted);
+        transition: all 0.2s ease;
     }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-weight: 600;
+    .stTabs [role="tab"]:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+    .stTabs [aria-selected="true"] {
+        background: var(--grad) !important; color: #fff !important;
+        box-shadow: 0 6px 20px rgba(214, 41, 118, 0.35);
+    }
+    .stTabs [aria-selected="true"] p { color: #fff !important; }
+    .stTabs [role="tab"] { display: flex; align-items: center; cursor: pointer; border: none; }
+    .stTabs [role="tablist"] { overflow: hidden !important; border-bottom: 1px solid var(--glass-border) !important; }
+    .stTabs [role="tablist"]::after, .stTabs [role="tablist"]::before { display: none !important; }
+    .stTabs [role="tab"] { min-width: 0; white-space: nowrap; }
+    .stTabs .react-aria-SelectionIndicator { display: none !important; }
+
+    /* Inputs */
+    .stTextArea textarea, .stTextInput input,
+    .stSelectbox [data-baseweb="select"] > div {
+        background: rgba(0, 0, 0, 0.28) !important;
+        border-radius: 12px !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    .stTextArea textarea:focus, .stTextInput input:focus {
+        border-color: #d62976 !important;
+        box-shadow: 0 0 0 3px rgba(214, 41, 118, 0.2) !important;
+    }
+    [data-testid="stFileUploaderDropzone"] {
+        background: rgba(0, 0, 0, 0.22); border: 1.5px dashed rgba(255, 255, 255, 0.18);
+        border-radius: 14px;
+    }
+    [data-testid="stFileUploaderDropzone"]:hover { border-color: #d62976; }
+
+    /* Buttons */
+    .stButton > button, .stDownloadButton > button, .stLinkButton > a {
+        width: 100%; border-radius: 12px; font-weight: 700;
+        transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    [data-testid="stBaseButton-primary"], [data-testid="stBaseLinkButton-primary"] {
+        background: var(--grad) !important; background-size: 150% auto !important;
+        border: none !important; color: #fff !important;
+        box-shadow: 0 6px 22px rgba(214, 41, 118, 0.35);
+    }
+    .stButton [data-testid="stBaseButton-primary"] { min-height: 3.3rem; font-size: 1.05rem; margin-top: 0.4rem; }
+    [data-testid="stBaseButton-primary"]:hover, [data-testid="stBaseLinkButton-primary"]:hover {
+        transform: translateY(-2px); filter: brightness(1.08);
+        box-shadow: 0 10px 30px rgba(214, 41, 118, 0.5);
+    }
+    [data-testid="stBaseButton-secondary"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        color: #e4e4ee !important;
+    }
+    [data-testid="stBaseButton-secondary"]:hover {
+        border-color: #d62976 !important; color: #fff !important;
+        background: rgba(214, 41, 118, 0.12) !important;
+    }
+    [class*="st-key-linkbtns"] [data-testid="stHorizontalBlock"] { flex-wrap: nowrap !important; gap: 0.6rem; }
+    [class*="st-key-linkbtns"] [data-testid="stColumn"] { min-width: 0 !important; width: auto !important; flex: 1 1 0 !important; }
+    [class*="st-key-clear"] button {
+        width: 100% !important; height: 36px; min-height: 36px !important; padding: 0 10px !important;
+        font-size: 0.8rem !important; font-weight: 600 !important; color: var(--muted) !important;
+    }
+    [class*="st-key-clear"] button:hover {
+        background: rgba(244, 67, 54, 0.14) !important;
+        border-color: #f44336 !important; color: #ff8a80 !important;
     }
 
-    /* Mobile Specific Media Query */
+    /* Expander */
+    [data-testid="stExpander"] details {
+        background: var(--glass); border: 1px solid var(--glass-border) !important;
+        border-radius: 16px;
+    }
+    [data-testid="stExpander"] summary { font-weight: 600; }
+
+    /* Progress bar */
+    .stProgress > div > div > div > div { background: var(--grad) !important; }
+
+    /* Radio pills */
+    .stRadio [role="radiogroup"] { gap: 8px; }
+    .stRadio [role="radiogroup"] > label {
+        background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 12px; border-radius: 10px; margin-right: 0;
+    }
+    .stRadio [role="radiogroup"] > label:has(input:checked) {
+        border-color: #d62976; background: rgba(214, 41, 118, 0.12);
+    }
+
+    /* Media & alerts */
+    [data-testid="stImage"] img, video { border-radius: 14px; }
+    [data-testid="stAlert"] { border-radius: 14px; }
+    hr { border-color: rgba(255, 255, 255, 0.08) !important; }
+
+    .app-footer { text-align: center; color: #5d5d72; font-size: 0.78rem; margin-top: 3rem; }
+
     @media (max-width: 768px) {
-        .hero-title { font-size: 1.6rem !important; }
-        .hero-sub { font-size: 0.85rem !important; }
-        .clean-card { padding: 0.9rem !important; }
-        .stButton>button { height: 2.7rem !important; font-size: 0.95rem !important; }
+        .block-container { padding-top: 1.2rem; }
+        .hero-title { font-size: 1.85rem !important; }
+        .hero-sub { font-size: 0.88rem !important; }
+        .hero-logo { width: 54px; height: 54px; font-size: 1.6rem; }
+        [class*="st-key-card"] { padding: 0.95rem !important; }
+        .stTabs [role="tab"] { height: 42px; padding: 6px 8px; font-size: 0.85rem; }
+        .stButton [data-testid="stBaseButton-primary"] { min-height: 2.9rem; font-size: 0.95rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -148,16 +247,39 @@ def remove_beforeunload_warning():
     </script>
     """, height=0, width=0)
 
-# Minimal Header
+_paste_component = components.declare_component(
+    "paste_button", path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "components", "paste_button")
+)
+
+def paste_link_button(key, text_key, area_key):
+    """Reads the browser clipboard and appends it to the links text area."""
+    val = _paste_component(key=key, default=None)
+    if val and val.get("nonce") != st.session_state.get(f"{key}_nonce"):
+        st.session_state[f"{key}_nonce"] = val.get("nonce")
+        current = st.session_state.get(text_key, "").rstrip()
+        pasted = val.get("text", "").strip()
+        new_text = f"{current}\n{pasted}" if current else pasted
+        st.session_state[text_key] = new_text
+        st.session_state[area_key] = new_text
+
+def section_header(num, title, desc=""):
+    st.markdown(
+        f'<div class="sec-head"><div class="sec-num">{num}</div><div class="sec-title">{title}</div></div>'
+        + (f'<div class="sec-desc">{desc}</div>' if desc else ""),
+        unsafe_allow_html=True
+    )
+
+# Hero Header
 st.markdown("""
 <div class="hero-box">
-    <div class="hero-title">⚡ InstaForge Studio</div>
-    <div class="hero-sub">Video Downloader, Aspect Ratio Cropper & Banner Studio</div>
+    <div class="hero-logo">⚡</div>
+    <div class="hero-title">InstaForge Studio</div>
+    <div class="hero-sub">Download, crop & brand your Reels and Shorts in one click</div>
 </div>
 """, unsafe_allow_html=True)
 
 # TABS: Tab 1 = Instagram Studio (Existing 100%), Tab 2 = YouTube 4:5 Crop & Text Studio (New)
-tab_insta, tab_yt = st.tabs(["📸 Instagram Studio", "▶️ YouTube Studio (4:5 Crop & Text)"])
+tab_insta, tab_yt = st.tabs(["📸 Instagram Studio", "▶️ YouTube Studio"])
 
 # =========================================================================
 # TAB 1: INSTAGRAM STUDIO (Existing functionality 100% intact)
@@ -167,68 +289,65 @@ with tab_insta:
     if "links_text" not in st.session_state:
         st.session_state["links_text"] = ""
 
-    # 1. Links Input with 1-Click Clear Button
-    st.markdown('<div class="clean-card">', unsafe_allow_html=True)
-    header_col1, header_col2 = st.columns([2.5, 1])
-    with header_col1:
-        st.markdown("**🔗 Instagram Links**")
-    with header_col2:
-        st.markdown('<div class="clear-btn">', unsafe_allow_html=True)
-        if st.button("🗑️ Clear Links", key="clear_insta_btn"):
-            st.session_state["links_text"] = ""
-            st.session_state["links_area_val"] = ""
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+    # 1. Links Input with Paste & Clear Buttons
+    with st.container(border=True, key="card_insta_links"):
+        section_header(1, "🔗 Instagram Links", "Paste one or more Reel / post links, one per line")
+        paste_col, clear_col = st.container(key="linkbtns_insta").columns(2)
+        with paste_col:
+            paste_link_button("paste_insta", "links_text", "links_area_val")
+        with clear_col:
+            if st.button("🗑️ Clear Links", key="clear_insta_btn"):
+                st.session_state["links_text"] = ""
+                st.session_state["links_area_val"] = ""
+                st.rerun()
 
-    links_raw = st.text_area(
-        "Instagram Links (Single or Multiple):",
-        value=st.session_state.get("links_text", ""),
-        placeholder="https://www.instagram.com/reel/Cxxxxxx/\nhttps://www.instagram.com/reel/Cyyyyyy/",
-        height=95,
-        key="links_area_val",
-        label_visibility="collapsed",
-        help="Paste one or multiple Instagram links, one link per line."
-    )
-    st.session_state["links_text"] = links_raw
+        links_raw = st.text_area(
+            "Instagram Links (Single or Multiple):",
+            value=st.session_state.get("links_text", ""),
+            placeholder="https://www.instagram.com/reel/Cxxxxxx/\nhttps://www.instagram.com/reel/Cyyyyyy/",
+            height=95,
+            key="links_area_val",
+            label_visibility="collapsed",
+            help="Paste one or multiple Instagram links, one link per line."
+        )
+        st.session_state["links_text"] = links_raw
 
-    links = [l.strip() for l in links_raw.splitlines() if l.strip() and "instagram.com" in l]
-    if links:
-        st.caption(f"✨ **{len(links)} Valid Link(s) Detected**")
-    st.markdown('</div>', unsafe_allow_html=True)
+        links = [l.strip() for l in links_raw.splitlines() if l.strip() and "instagram.com" in l]
+        if links:
+            st.caption(f"✨ **{len(links)} Valid Link(s) Detected**")
 
     # 2. Image Selection (Saved Banners or New Upload)
-    st.markdown('<div class="clean-card">', unsafe_allow_html=True)
-    st.markdown("**🖼️ Top Banner Image**")
+    with st.container(border=True, key="card_insta_banner"):
+        section_header(2, "🖼️ Top Banner Image", "Pick a saved banner or upload a new one")
 
-    saved_images = [os.path.basename(f) for f in sorted(glob.glob(os.path.join(SAVED_DIR, "*"))) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
+        saved_images = [os.path.basename(f) for f in sorted(glob.glob(os.path.join(SAVED_DIR, "*"))) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
 
-    img_source = st.radio(
-        "Image Source:",
-        options=["Saved Banners", "Upload New Image"],
-        horizontal=True,
-        label_visibility="collapsed",
-        key="insta_img_source"
-    )
+        img_source = st.radio(
+            "Image Source:",
+            options=["Saved Banners", "Upload New Image"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="insta_img_source"
+        )
 
-    selected_image_path = None
+        selected_image_path = None
 
-    if img_source == "Saved Banners":
-        if saved_images:
-            chosen_img_name = st.selectbox("Choose a saved banner:", saved_images, key="insta_saved_picker")
-            selected_image_path = os.path.join(SAVED_DIR, chosen_img_name)
-            st.image(selected_image_path, width=280)
+        if img_source == "Saved Banners":
+            if saved_images:
+                chosen_img_name = st.selectbox("Choose a saved banner:", saved_images, key="insta_saved_picker")
+                selected_image_path = os.path.join(SAVED_DIR, chosen_img_name)
+                st.image(selected_image_path, width=280)
+            else:
+                st.info("No saved banners found yet. Please upload a new image.")
         else:
-            st.info("No saved banners found yet. Please upload a new image.")
-    else:
-        new_img = st.file_uploader("Upload New Image:", type=["png", "jpg", "jpeg", "webp"], key="insta_new_uploader")
-        if new_img:
-            clean_name = f"{int(time.time())}_{new_img.name}"
-            save_path = os.path.join(SAVED_DIR, clean_name)
-            with open(save_path, "wb") as f:
-                f.write(new_img.getbuffer())
-            selected_image_path = save_path
-            st.image(selected_image_path, width=280)
-    st.markdown('</div>', unsafe_allow_html=True)
+            new_img = st.file_uploader("Upload New Image:", type=["png", "jpg", "jpeg", "webp"], key="insta_new_uploader")
+            if new_img:
+                clean_name = f"{int(time.time())}_{new_img.name}"
+                save_path = os.path.join(SAVED_DIR, clean_name)
+                with open(save_path, "wb") as f:
+                    f.write(new_img.getbuffer())
+                selected_image_path = save_path
+                st.image(selected_image_path, width=280)
 
     # 3. Extra Settings (Collapsed by Default)
     with st.expander("⚙️ Advanced Layout Settings (Optional)", expanded=False):
@@ -329,27 +448,26 @@ with tab_insta:
 
                     with live_container:
                         if item["success"]:
-                            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-                            st.markdown(f"**✅ Video #{idx} Ready:** {item['title'][:40]}")
-                            st.video(item["bytes"])
+                            with st.container(border=True, key=f"result_insta_live_{idx}"):
+                                st.markdown(f"**✅ Video #{idx} Ready:** {item['title'][:40]}")
+                                st.video(item["bytes"])
 
-                            col_b1, col_b2 = st.columns(2)
-                            with col_b1:
-                                st.download_button(
-                                    label=f"⬇️ Download #{idx}",
-                                    data=item["bytes"],
-                                    file_name=f"edited_video_{idx}.mp4",
-                                    mime="video/mp4",
-                                    key=f"dl_live_{idx}"
-                                )
-                            with col_b2:
-                                st.link_button(
-                                    label="🚀 Post to FB Reels",
-                                    url="https://www.facebook.com/reels/create/",
-                                    type="primary",
-                                    key=f"fb_link_live_{idx}"
-                                )
-                            st.markdown('</div>', unsafe_allow_html=True)
+                                col_b1, col_b2 = st.columns(2)
+                                with col_b1:
+                                    st.download_button(
+                                        label=f"⬇️ Download #{idx}",
+                                        data=item["bytes"],
+                                        file_name=f"edited_video_{idx}.mp4",
+                                        mime="video/mp4",
+                                        key=f"dl_live_{idx}"
+                                    )
+                                with col_b2:
+                                    st.link_button(
+                                        label="🚀 Post to FB Reels",
+                                        url="https://www.facebook.com/reels/create/",
+                                        type="primary",
+                                        key=f"fb_link_live_{idx}"
+                                    )
 
                 status_text.success("🎉 All videos generated successfully!")
                 progress_bar.empty()
@@ -379,30 +497,29 @@ with tab_insta:
             )
 
         for item in st.session_state.results:
-            st.markdown('<div class="result-card">', unsafe_allow_html=True)
-            if item["success"]:
-                st.markdown(f"**✅ Video #{item['index']} Ready:** {item['title'][:40]}")
-                st.video(item["bytes"])
+            with st.container(border=True, key=f"result_insta_pers_{item['index']}"):
+                if item["success"]:
+                    st.markdown(f"**✅ Video #{item['index']} Ready:** {item['title'][:40]}")
+                    st.video(item["bytes"])
 
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.download_button(
-                        label=f"⬇️ Download #{item['index']}",
-                        data=item["bytes"],
-                        file_name=f"edited_video_{item['index']}.mp4",
-                        mime="video/mp4",
-                        key=f"dl_pers_{item['index']}"
-                    )
-                with c2:
-                    st.link_button(
-                        label="🚀 Post to FB Reels",
-                        url="https://www.facebook.com/reels/create/",
-                        type="primary",
-                        key=f"fb_link_pers_{item['index']}"
-                    )
-            else:
-                st.error(f"❌ #{item['index']} Failed: {item['error']}")
-            st.markdown('</div>', unsafe_allow_html=True)
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.download_button(
+                            label=f"⬇️ Download #{item['index']}",
+                            data=item["bytes"],
+                            file_name=f"edited_video_{item['index']}.mp4",
+                            mime="video/mp4",
+                            key=f"dl_pers_{item['index']}"
+                        )
+                    with c2:
+                        st.link_button(
+                            label="🚀 Post to FB Reels",
+                            url="https://www.facebook.com/reels/create/",
+                            type="primary",
+                            key=f"fb_link_pers_{item['index']}"
+                        )
+                else:
+                    st.error(f"❌ #{item['index']} Failed: {item['error']}")
 
 # =========================================================================
 # TAB 2: YOUTUBE STUDIO (Quality / Size Selection, 4:5 Crop & Direct Download)
@@ -412,80 +529,77 @@ with tab_yt:
         st.session_state["yt_links_text"] = ""
 
     # 1. YouTube Links Input
-    st.markdown('<div class="clean-card">', unsafe_allow_html=True)
-    yt_hcol1, yt_hcol2 = st.columns([2.5, 1])
-    with yt_hcol1:
-        st.markdown("**▶️ YouTube Video / Shorts Links**")
-    with yt_hcol2:
-        st.markdown('<div class="clear-btn">', unsafe_allow_html=True)
-        if st.button("🗑️ Clear Links", key="clear_yt_btn"):
-            st.session_state["yt_links_text"] = ""
-            st.session_state["yt_area_val"] = ""
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True, key="card_yt_links"):
+        section_header(1, "▶️ YouTube Links", "Videos or Shorts, one link per line")
+        yt_paste_col, yt_clear_col = st.container(key="linkbtns_yt").columns(2)
+        with yt_paste_col:
+            paste_link_button("paste_yt", "yt_links_text", "yt_area_val")
+        with yt_clear_col:
+            if st.button("🗑️ Clear Links", key="clear_yt_btn"):
+                st.session_state["yt_links_text"] = ""
+                st.session_state["yt_area_val"] = ""
+                st.rerun()
 
-    yt_links_raw = st.text_area(
-        "YouTube Links:",
-        value=st.session_state.get("yt_links_text", ""),
-        placeholder="https://www.youtube.com/watch?v=xxxxxx\nhttps://youtube.com/shorts/yyyyyy",
-        height=95,
-        key="yt_area_val",
-        label_visibility="collapsed",
-        help="Paste YouTube Video or Shorts links, one per line."
-    )
-    st.session_state["yt_links_text"] = yt_links_raw
+        yt_links_raw = st.text_area(
+            "YouTube Links:",
+            value=st.session_state.get("yt_links_text", ""),
+            placeholder="https://www.youtube.com/watch?v=xxxxxx\nhttps://youtube.com/shorts/yyyyyy",
+            height=95,
+            key="yt_area_val",
+            label_visibility="collapsed",
+            help="Paste YouTube Video or Shorts links, one per line."
+        )
+        st.session_state["yt_links_text"] = yt_links_raw
 
-    yt_links = [l.strip() for l in yt_links_raw.splitlines() if l.strip() and ("youtube.com" in l or "youtu.be" in l)]
-    if yt_links:
-        st.caption(f"✨ **{len(yt_links)} Valid YouTube Link(s) Detected**")
-    st.markdown('</div>', unsafe_allow_html=True)
+        yt_links = [l.strip() for l in yt_links_raw.splitlines() if l.strip() and ("youtube.com" in l or "youtu.be" in l)]
+        if yt_links:
+            st.caption(f"✨ **{len(yt_links)} Valid YouTube Link(s) Detected**")
 
     # 2. Quality / Video Size & Mode Selector (Before Generating)
-    st.markdown('<div class="clean-card">', unsafe_allow_html=True)
-    st.markdown("**⚙️ Video Size & Quality Settings**")
-    q_col1, q_col2 = st.columns(2)
-    with q_col1:
-        yt_quality_choice = st.selectbox(
-            "Select Video Resolution / Size:",
-            options=[
-                "1080p (Full HD - High Quality, 1080x1350)",
-                "720p (HD - Balanced, 720x900)",
-                "480p (SD - Fast / Smaller Size, 480x600)",
-                "360p (Low - Lightweight, 360x450)",
-                "Best Available (Original Source Quality)"
-            ],
-            index=0,
-            help="Choose the video resolution before download and processing."
-        )
-    with q_col2:
-        yt_mode = st.radio(
-            "Processing Mode:",
-            options=[
-                "📐 Crop to 4:5 (With Top Text Banner)",
-                "📥 Direct Download (Original Video, No Crop)"
-            ],
-            index=0,
-            help="Choose between 4:5 aspect ratio cropping or direct original video download."
-        )
+    with st.container(border=True, key="card_yt_quality"):
+        section_header(2, "⚙️ Size & Quality", "Choose resolution and how the video is processed")
+        q_col1, q_col2 = st.columns(2)
+        with q_col1:
+            yt_quality_choice = st.selectbox(
+                "Select Video Resolution / Size:",
+                options=[
+                    "1080p (Full HD - High Quality, 1080x1350)",
+                    "720p (HD - Balanced, 720x900)",
+                    "480p (SD - Fast / Smaller Size, 480x600)",
+                    "360p (Low - Lightweight, 360x450)",
+                    "Best Available (Original Source Quality)"
+                ],
+                index=0,
+                help="Choose the video resolution before download and processing."
+            )
+        with q_col2:
+            yt_mode = st.radio(
+                "Processing Mode:",
+                options=[
+                    "📐 Crop to 4:5 (With Top Text Banner)",
+                    "📥 Direct Download (Original Video, No Crop)"
+                ],
+                index=0,
+                help="Choose between 4:5 aspect ratio cropping or direct original video download."
+            )
 
-    # Parse Quality
-    if "1080p" in yt_quality_choice:
-        yt_quality = "1080p"
-        target_w, target_h = 1080, 1350
-    elif "720p" in yt_quality_choice:
-        yt_quality = "720p"
-        target_w, target_h = 720, 900
-    elif "480p" in yt_quality_choice:
-        yt_quality = "480p"
-        target_w, target_h = 480, 600
-    elif "360p" in yt_quality_choice:
-        yt_quality = "360p"
-        target_w, target_h = 360, 450
-    else:
-        yt_quality = "best"
-        target_w, target_h = 1080, 1350
+        # Parse Quality
+        if "1080p" in yt_quality_choice:
+            yt_quality = "1080p"
+            target_w, target_h = 1080, 1350
+        elif "720p" in yt_quality_choice:
+            yt_quality = "720p"
+            target_w, target_h = 720, 900
+        elif "480p" in yt_quality_choice:
+            yt_quality = "480p"
+            target_w, target_h = 480, 600
+        elif "360p" in yt_quality_choice:
+            yt_quality = "360p"
+            target_w, target_h = 360, 450
+        else:
+            yt_quality = "best"
+            target_w, target_h = 1080, 1350
 
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # 3. Top Text Banner Input (Only if 4:5 Crop mode is selected)
     yt_custom_text = ""
@@ -494,23 +608,22 @@ with tab_yt:
     yt_banner_height = 220
 
     if yt_mode == "📐 Crop to 4:5 (With Top Text Banner)":
-        st.markdown('<div class="clean-card">', unsafe_allow_html=True)
-        st.markdown("**✍️ Top Headline / Text Banner (Optional)**")
-        yt_custom_text = st.text_input(
-            "Top Text to Overlay:",
-            placeholder="e.g. WAIT FOR THE END! 😂 | INSANE MOMENT 🔥",
-            help="This text will be rendered as a bold top header on the 4:5 cropped video."
-        )
+        with st.container(border=True, key="card_yt_text"):
+            section_header(3, "✍️ Headline Banner", "Optional bold text shown above the cropped video")
+            yt_custom_text = st.text_input(
+                "Top Text to Overlay:",
+                placeholder="e.g. WAIT FOR THE END! 😂 | INSANE MOMENT 🔥",
+                help="This text will be rendered as a bold top header on the 4:5 cropped video."
+            )
 
-        with st.expander("🎨 Text Banner Styling (Colors & Height)", expanded=False):
-            yt_scol1, yt_scol2 = st.columns(2)
-            with yt_scol1:
-                yt_text_color = st.selectbox("Text Color:", ["yellow", "white", "#00ffff", "#ff3b30"], index=0)
-                yt_bg_color = st.selectbox("Banner Background:", ["black", "#121212", "white", "#b71c1c"], index=0)
-            with yt_scol2:
-                yt_banner_height = st.slider("Banner Height (px):", 140, 320, 220, 20)
-                st.caption(f"Output size: {target_w}x{target_h} (4:5 Aspect Ratio)")
-        st.markdown('</div>', unsafe_allow_html=True)
+            with st.expander("🎨 Text Banner Styling (Colors & Height)", expanded=False):
+                yt_scol1, yt_scol2 = st.columns(2)
+                with yt_scol1:
+                    yt_text_color = st.selectbox("Text Color:", ["yellow", "white", "#00ffff", "#ff3b30"], index=0)
+                    yt_bg_color = st.selectbox("Banner Background:", ["black", "#121212", "white", "#b71c1c"], index=0)
+                with yt_scol2:
+                    yt_banner_height = st.slider("Banner Height (px):", 140, 320, 220, 20)
+                    st.caption(f"Output size: {target_w}x{target_h} (4:5 Aspect Ratio)")
 
     # Session state for YouTube results
     if "yt_results" not in st.session_state:
@@ -518,60 +631,59 @@ with tab_yt:
 
     # Helper function to render a card
     def render_youtube_card(item, key_prefix="live"):
-        st.markdown('<div class="result-card">', unsafe_allow_html=True)
-        idx = item["index"]
-        if item["success"]:
-            st.markdown(f"**✅ Video #{idx} Ready ({item['quality']}):** {item['title'][:45]}")
-            play_bytes = item.get("cropped_bytes") or item.get("orig_bytes")
-            if play_bytes:
-                st.video(play_bytes)
+        with st.container(border=True, key=f"result_yt_{key_prefix}_{item['index']}"):
+            idx = item["index"]
+            if item["success"]:
+                st.markdown(f"**✅ Video #{idx} Ready ({item['quality']}):** {item['title'][:45]}")
+                play_bytes = item.get("cropped_bytes") or item.get("orig_bytes")
+                if play_bytes:
+                    st.video(play_bytes)
 
-            if item.get("cropped_bytes") and item.get("orig_bytes"):
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.download_button(
-                        label=f"⬇️ 4:5 Video ({item['quality']})",
-                        data=item["cropped_bytes"],
-                        file_name=f"yt_4_5_{idx}_{item['quality']}.mp4",
-                        mime="video/mp4",
-                        key=f"dl_crop_{key_prefix}_{idx}"
-                    )
-                with col2:
-                    st.download_button(
-                        label=f"📥 Original Video ({item['quality']})",
-                        data=item["orig_bytes"],
-                        file_name=f"yt_original_{idx}_{item['quality']}.mp4",
-                        mime="video/mp4",
-                        key=f"dl_orig_{key_prefix}_{idx}"
-                    )
-                with col3:
-                    st.link_button(
-                        label="🚀 Post to FB Reels",
-                        url="https://www.facebook.com/reels/create/",
-                        type="primary",
-                        key=f"fb_yt_{key_prefix}_{idx}"
-                    )
+                if item.get("cropped_bytes") and item.get("orig_bytes"):
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.download_button(
+                            label=f"⬇️ 4:5 Video ({item['quality']})",
+                            data=item["cropped_bytes"],
+                            file_name=f"yt_4_5_{idx}_{item['quality']}.mp4",
+                            mime="video/mp4",
+                            key=f"dl_crop_{key_prefix}_{idx}"
+                        )
+                    with col2:
+                        st.download_button(
+                            label=f"📥 Original Video ({item['quality']})",
+                            data=item["orig_bytes"],
+                            file_name=f"yt_original_{idx}_{item['quality']}.mp4",
+                            mime="video/mp4",
+                            key=f"dl_orig_{key_prefix}_{idx}"
+                        )
+                    with col3:
+                        st.link_button(
+                            label="🚀 Post to FB Reels",
+                            url="https://www.facebook.com/reels/create/",
+                            type="primary",
+                            key=f"fb_yt_{key_prefix}_{idx}"
+                        )
+                else:
+                    dl_data = item.get("cropped_bytes") or item.get("orig_bytes")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.download_button(
+                            label=f"⬇️ Download Video ({item['quality']})",
+                            data=dl_data,
+                            file_name=f"yt_video_{idx}_{item['quality']}.mp4",
+                            mime="video/mp4",
+                            key=f"dl_single_{key_prefix}_{idx}"
+                        )
+                    with col2:
+                        st.link_button(
+                            label="🚀 Post to FB Reels",
+                            url="https://www.facebook.com/reels/create/",
+                            type="primary",
+                            key=f"fb_yt_{key_prefix}_{idx}"
+                        )
             else:
-                dl_data = item.get("cropped_bytes") or item.get("orig_bytes")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.download_button(
-                        label=f"⬇️ Download Video ({item['quality']})",
-                        data=dl_data,
-                        file_name=f"yt_video_{idx}_{item['quality']}.mp4",
-                        mime="video/mp4",
-                        key=f"dl_single_{key_prefix}_{idx}"
-                    )
-                with col2:
-                    st.link_button(
-                        label="🚀 Post to FB Reels",
-                        url="https://www.facebook.com/reels/create/",
-                        type="primary",
-                        key=f"fb_yt_{key_prefix}_{idx}"
-                    )
-        else:
-            st.error(f"❌ #{idx} Failed: {item['error']}")
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.error(f"❌ #{idx} Failed: {item['error']}")
 
     # Action Button
     if "Direct Download" in yt_mode:
@@ -699,3 +811,5 @@ with tab_yt:
 
         for item in st.session_state.yt_results:
             render_youtube_card(item, key_prefix="persisted")
+
+st.markdown('<div class="app-footer">Made with ⚡ InstaForge Studio</div>', unsafe_allow_html=True)
